@@ -1,8 +1,9 @@
 ## Denoising Diffusion Probabilistic Model - DDPM 
 
-Simple implementation of DDPM 
+Simple implementation of DDPM in one single python script with training and inference
 
-## Usage 
+### Usage 
+---
 
 ```
 usage: ddpm.py [-h] [--timesteps TIMESTEPS] [--beta-start BETA_START] [--beta-end BETA_END] [--log-step LOG_STEP]
@@ -30,4 +31,25 @@ options:
   --config CONFIG       Path of UNet config file in json format
   --output-dir OUTPUT_DIR
 ```  
+
+* First download the model checkpoint 
+```bash
+wget https://huggingface.co/P3g4su5/DDPM-UNet/resolve/main/ddpm.ckpt?download=true -O ddpm.ckpt
+``` 
+* Then run the following script 
+```bash
+#!/bin/bash
+
+python3 ddpm.py \
+	--beta-start 1e-4 \
+	--beta-end 2e-2 \
+	--timesteps 1000 \
+	--num-images 50 \
+	--checkpoint "ddpm.ckpt" \
+	--output-dir "sample-images" \
+	--config "config.json" \
+	--generate 
+```
+* Since this is vanilla DDPM, 1000 steps will take quite a lot of time to generate so I suggest running inference on a GPU
+
 
