@@ -124,9 +124,9 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset", type=str, choices=["mnist", "cifar10"])
 
-    parser.add_argument("--epochs", type = int, default = 2)
-    parser.add_argument("--batch_size", type = int, default = 128)
-    parser.add_argument("--lr", type = float, default = 1e-6)
+    parser.add_argument("--epochs", type = int, default = 20)
+    parser.add_argument("--batch_size", type = int, default = 64)
+    parser.add_argument("--lr", type = float, default = 1e-4)
     parser.add_argument("--sigma", type = int, default = 25)
     parser.add_argument("--device", type = str, default = "cpu")
 
@@ -160,5 +160,5 @@ if __name__ == "__main__" :
 
     if(args.mode=='sample'):
         score.generate(checkpoint_path, args.dataset, args.sampler)
-# python main.py 'cifar10' 'train'
-# python main.py 'cifar10' 'sampler' --device=='cuda/mps'
+# python main.py 'cifar10' 'train' --device=='cuda/mps'
+# python main.py 'cifar10' 'sampler' 
