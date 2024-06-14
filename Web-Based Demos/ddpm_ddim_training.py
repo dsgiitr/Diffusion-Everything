@@ -1,10 +1,13 @@
 import argparse
-import data, model
 import torch
 import numpy as np
 import pandas as pd
 import plotly.express as px
 from torch import nn
+from beta_scheduler import beta_scheduler
+from data import data_loader
+from model import model_loader
+from visualise import visualise_data
 
 parser = argparse.ArgumentParser(prog='DDPM/DDIM Training Program',
                                 description="""The program trains a DDPM/DDIM-based Diffusion Model.
@@ -16,13 +19,18 @@ parser = argparse.ArgumentParser(prog='DDPM/DDIM Training Program',
 parser.add_argument('--data', type=str, default='swissroll',
                     help="""Choose the dataset to train the model on.
                     Currently supported choices are :
-                    1) swissroll
-                    2) donut
-                    3) custom (in this case, you must pass the datafile path using the --datafile argument)""")
+                    1) swissroll (2D)
+                    2) circle (2D)
+                    3) polygon (2D)
+                    4) donut (3D)
+                    5) spring (3D)
+                    6) mobius (3D)
+                    7) custom (in this case, you must pass the datafile path using the --datafile argument)""")
 
 parser.add_argument('--visualise', type=bool, default=True,
                     help="""Visualise the dataset using plotly (default : True).
-                    Supported for the custom datasets if they are 2D or 3D""")
+                    Supported for the custom datasets if they are 2D or 3D
+                    For it to evaluate to False, pass an empty string as the argument (eg. '')""")
 
 parser.add_argument('--n', type=int, default=10000,
                     help="""Number of samples to generate for the dataset, if custom is not used (default : 10000)""")
@@ -55,7 +63,10 @@ parser.add_argument('--num_epochs', type=int, default=1000,
 parser.add_argument('--lr', type=float, default=0.01,
                     help = """Learning rate for the optimizer (default : 0.01)""")
 
-parser.add_argument('--model_device', type=str, default='cpu',
+parser.add_argument('--num_batches', type=int, default=1000,
+                    help = """Number of batches for training the model (default : 1)""")
+
+parser.add_argument('--device', type=str, default='cpu',
                     help = """Device to train the model on (default : cpu)
                     Use cuda if available for faster training
                     Avoid using mps due to issues with the PyTorch MPS backend""")
@@ -79,121 +90,35 @@ parser.add_argument('--beta_min', type=float, default=0.0001,
 parser.add_argument('--beta_max', type=float, default=0.1,
                     help = """Final value of beta (default : 0.1)""")
 
+# args relevant to the script
+
+parser.add_argument('--log_interval', type=int, default=10,
+                    help = """Log the model loss after every log_interval epochs (default : 10)""")
+
 args = parser.parse_args()
 
 # Loading the data
 
-if args.data == 'swissroll':
-    from data import swissroll
-    if args.data_args is None:
-        data = swissroll()
-    else:
-        spirals = list(map(int, args.data_args.split('-')))
-        data = swissroll(spirals = spirals, n = args.n)
-
-if args.data == 'donut':
-    from data import donut
-    if args.data_args is None:
-        data = donut()
-    else:
-        a, b = list(map(int, args.data_args.split('-')))
-        data = donut(a = a, b = b, n = args.n)
-
-if args.data == 'custom':
-    data = torch.load(args.datafile)
+data = data_loader(args.data, args.data_args, args.n, args.datafile)
 
 # Visualising the data
 
 if args.visualise:
-    if data.shape[1] == 2:
-        fig = px.scatter(x = data[:,0], y = data[:,1], color = (np.sqrt(data[:,0]**2 + data[:,1]**2)), color_continuous_scale='viridis')
-        fig.show()
-    if data.shape[1] == 3:
-        fig = px.scatter_3d(x = data[:,0], y = data[:,1], z = data[:,2], color = (np.sqrt(data[:,0]**2 + data[:,1]**2 + data[:,2]**2)), color_continuous_scale='viridis')
-        fig.show()
+    visualise_data(data, "Original Dataset")
 
 # Loading the model for training
 
-if args.model == 'mlp_diffusion':
-    from model import DiffusionMLPNet
-    hidden_dims = list(map(int, args.hidden_dims.split('-')))
-    model = DiffusionMLPNet(data.shape[1], hidden_dims, data.shape[1], args.timesteps)
-
-if args.model == 'conv_diffusion':
-    from model import DiffusionConvNet
-    hidden_channels = list(map(int, args.hidden_dims.split('-')))
-    model = DiffusionConvNet(data.shape[1], hidden_channels, data.shape[1], args.timesteps)
-
+hidden_dims = list(map(int, args.hidden_dims.split('-')))
+model = model_loader(args.model, hidden_dims, data.shape[1], args.timesteps)
 
 # Initialising the beta scheduler
 
-T = args.timesteps
-beta_1 = args.beta_min
-beta_T = args.beta_max
-kind = args.beta_scheduler
+beta_scheduler_ = beta_scheduler(args.beta_min, args.beta_max, args.beta_scheduler)
+alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
 
-def beta_schedule(t, T = 100, beta_1 = beta_1, beta_T = beta_T, kind = kind):
-    if (kind == 'linear'):
-        beta = beta_1 + (beta_T - beta_1)*(t-1)/(T-1)
-    if (kind == 'quadratic'):
-        beta = beta_1 + (beta_T - beta_1)*((t-1)/(T-1))**2
-    return beta
+# Training the model
 
-def alpha_schedule(t, T = 100, beta_1 = beta_1, beta_T = beta_T, kind = kind):
-    alpha = 1 - beta_schedule(t, T, beta_1, beta_T, kind)
-    return alpha
-
-def alpha_bar_schedule(t, T = 100, beta_1 = beta_1, beta_T = beta_T, kind = kind):
-    alpha_bar = 1
-    for i in range(1, t+1):
-        alpha_bar *= alpha_schedule(i, T, beta_1, beta_T, kind)
-    return alpha_bar
-
-beta_ = [beta_schedule(t, T) for t in range(1, T+1)]
-alpha_ = [alpha_schedule(t, T) for t in range(1, T+1)]
-alpha_bar_ = [alpha_bar_schedule(t, T) for t in range(1, T+1)]
-
-# Training the model 
-if args.model_device == 'cuda':
-    model = model.to(args.model_device)
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    batch = data.to(torch.float32).to(args.model_device)
-    for _ in range(args.num_epochs):
-        input_ = torch.zeros((0,data.shape[1]))
-        t_ = torch.tensor(np.repeat(np.arange(T), data.shape[0])).to(args.model_device)
-        epsilon_ = torch.zeros((0,data.shape[1]))
-        for t in range(1,T+1):
-            epsilon = torch.randn_like(batch)
-            alpha_bar_t = alpha_bar_[t-1]
-            input = (np.sqrt(alpha_bar_t)*batch + np.sqrt(1-alpha_bar_t)*epsilon)
-            input_ = torch.vstack((input_, input))
-            epsilon_ = torch.vstack((epsilon_, epsilon))
-        optimizer.zero_grad()
-        loss = criterion(model(input_.to(args.model_device), t_), epsilon_)
-        loss.backward()
-        optimizer.step()
-        print(f"Loss at epoch {_+1} is : ", loss.item())
-if args.model_device == 'cpu':
-    model = model
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    batch = data.to(torch.float32)
-    for _ in range(args.num_epochs):
-        input_ = torch.zeros((0,data.shape[1]))
-        t_ = torch.tensor(np.repeat(np.arange(T), data.shape[0]))
-        epsilon_ = torch.zeros((0,data.shape[1]))
-        for t in range(1,T+1):
-            epsilon = torch.randn_like(batch)
-            alpha_bar_t = alpha_bar_[t-1]
-            input = (np.sqrt(alpha_bar_t)*batch + np.sqrt(1-alpha_bar_t)*epsilon)
-            input_ = torch.vstack((input_, input))
-            epsilon_ = torch.vstack((epsilon_, epsilon))
-        optimizer.zero_grad()
-        loss = criterion(model(input_, t_), epsilon_)
-        loss.backward()
-        optimizer.step()
-        print(f"Loss at epoch {_+1} is : ", loss.item())
+model.trainer(data, args.num_epochs, args.num_batches, alpha_bar_, args.lr, args.device, args.log_interval)
 
 # Saving the model
 
