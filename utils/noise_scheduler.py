@@ -24,7 +24,7 @@ class Linear(NoiseScheduler):
         timesteps = 1000, 
         device = None
     ): 
-        if device != None :
+        if device == None :
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else :
             self.device = device
@@ -34,7 +34,7 @@ class Linear(NoiseScheduler):
         self.timesteps = timesteps 
 
         self.beta = torch.linspace(beta_start, beta_end, timesteps, device = self.device)
-        self.alpha = 1 - self.betas
+        self.alpha = 1 - self.beta
         self.alpha_cumprod = torch.cumprod(self.alpha, 0)
         self.alpha_cumprod_minus_one = torch.cat((torch.tensor([1], device = self.device), self.alpha_cumprod[:-1]), dim = -1)
         self.sigma = self.beta.sqrt()
@@ -46,7 +46,7 @@ class Cosine(NoiseScheduler):
         device = None
     ):
 
-        if device != None :
+        if device == None :
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else :
             self.device = device

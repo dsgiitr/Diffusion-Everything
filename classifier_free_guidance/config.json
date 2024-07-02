@@ -1,8 +1,8 @@
 {
-    "num_class_embeds": 10,
     "sample_size": 32,
     "in_channels": 3,
     "out_channels": 3,
+    "cross_attention_dim" : 10, 
     "layers_per_block": 3,
     "block_out_channels": [
         128,
@@ -12,12 +12,12 @@
     "norm_num_groups": 8,
     "down_block_types": [
         "DownBlock2D",
-        "AttnDownBlock2D",
+        "CrossAttnDownBlock2D",
         "DownBlock2D"
     ],
     "up_block_types": [
         "UpBlock2D",
-        "AttnUpBlock2D",
+        "CrossAttnUpBlock2D",
         "UpBlock2D"
     ]
 }
