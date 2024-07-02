@@ -176,7 +176,7 @@ if __name__ == "__main__" :
 
 
     if not args.generate :
-        dataset = torchvision.datasets.CIFAR10(root = '/home/parth/datasets', transform = ddpm.preprocess)
+        dataset = torchvision.datasets.CIFAR10(root = '../datasets', transform = ddpm.preprocess)
         dataloader = torch.utils.data.DataLoader(dataset, shuffle = True, drop_last = True, batch_size = args.batch_size, num_workers = 3)
         
         ddpm.train(
