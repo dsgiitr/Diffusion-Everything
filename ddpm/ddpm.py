@@ -86,11 +86,9 @@ class DDPM():
             for i, (img, y) in tqdm(enumerate(dataloader), total = len(dataloader)):
                 img = img.to(self.device)
                 y = y.to(self.device)
-                print("Here")
                 ts = torch.randint(0, self.timesteps, (img.shape[0], ), device = self.device)
                 encodedImages, epsilon = self.noise_scheduler.forward_process(img, ts)
                 predictedNoise = self.UNet(encodedImages, ts, y).sample
-                print("Done forward")
                 loss = F.mse_loss(predictedNoise, epsilon)
                 loss.backward()
                 optimizer.step()
