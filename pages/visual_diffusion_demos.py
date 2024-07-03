@@ -40,6 +40,12 @@ class Args:
         self.dim_max = None
         self.dim_steps = None
         self.inferset = False
+        self.device = torch.device("cpu")
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        #if torch.backends.mps.is_available():
+            #self.device = torch.device("mps")
+        self.epochs_trained = 0
 
     def dataset_args(self, dataname = None, dataset = None, numpoints = None, dataargs = None, datafile = None):
         self.data_init = True
@@ -141,14 +147,15 @@ if (st.button("Train the Model")):
         st.error("Please initialise the model first")
         st.stop()
     if (args.model_training_started == True):
-        st.error("Model training had already been started! This might lead to inaccurate results. To ensure accurate results, please reinitalize the model and then start training.")
+        st.warning(f"You have already trained the model for {args.epochs_trained} epochs, this will now train the model for {args.num_epochs} more epochs")
     args.inferset = False
     args.model_training_started = True
     progress_track = st.progress(0)
     model = args.model
     beta_scheduler_ = beta_scheduler(args.beta_min, args.beta_max, args.beta_scheduler)
     alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
-    model.trainer(args.data, args.num_epochs, (args.n+args.batch_size-1)//args.batch_size, alpha_bar_, args.lr, 'cpu', 1, 'log.txt', progress_bar_callback = lambda x: progress_track.progress(x, text = f"Training Progress : {round(x*100)}%"))
+    model.trainer(args.data, args.num_epochs, (args.n+args.batch_size-1)//args.batch_size, alpha_bar_, args.lr, args.device, 1, 'log.txt', progress_bar_callback = lambda x: progress_track.progress(x, text = f"Training Progress : {round(x*100)}%"))
+    args.epochs_trained += args.num_epochs
     #args.model_path = f"{args.model.model_type}_diffusion_model_{args.dataname}_{args.n}_{args.timesteps}_{args.beta_min}_{args.beta_max}_{args.beta_scheduler}_{args.modeltype}.pt" # can also possibly include 
 if (st.session_state.args.model_training_started == True):
     st.write("Model trained successfully!")
@@ -167,7 +174,7 @@ if (st.button("Set Inference Parameters")):
     beta_ = beta_scheduler_.beta_schedule(args.timesteps)
     alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
     model = args.model
-    dataset, timesteps_data, timesteps_drift = model.inferrer(args.n, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, "cpu")
+    dataset, timesteps_data, timesteps_drift = model.inferrer(args.n, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, args.device)
     st.write("Inference parameters set successfully!")
     fig = visualise_data(dataset, "Inferred Dataset", show = False)
     st.plotly_chart(fig, use_container_width = True)
