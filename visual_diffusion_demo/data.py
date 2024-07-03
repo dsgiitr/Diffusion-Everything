@@ -1,7 +1,5 @@
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
-import plotly.express as px
 
 def swissroll(spirals = 2, n = 10000):
     theta = np.linspace(0,2*spirals*np.pi,(int)(1e5))
@@ -58,7 +56,7 @@ def mobius(n = 10000):
     data = torch.tensor(np.array([x,y,z])).T
     return data
 
-def data_loader(data, data_args, n, datafile):
+def data_loader(data, data_args, n, datafile = None):
     if data == 'swissroll':
         if data_args is None:
             data = swissroll(n = n)
