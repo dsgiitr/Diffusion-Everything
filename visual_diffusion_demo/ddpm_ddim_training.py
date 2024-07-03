@@ -92,8 +92,11 @@ parser.add_argument('--beta_max', type=float, default=0.1,
 
 # args relevant to the script
 
-parser.add_argument('--log_interval', type=int, default=10,
-                    help = """Log the model loss after every log_interval epochs (default : 10)""")
+parser.add_argument('--log_interval', type=int, default=1,
+                    help = """Log the model loss after every log_interval epochs (default : 1)""")
+
+parser.add_argument('--logfile', type = str, default = 'model_training_log.txt',
+                    help = """Path to the logfile to log the model training progress (default : model_training_log.txt)""")
 
 args = parser.parse_args()
 
@@ -118,7 +121,7 @@ alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
 
 # Training the model
 
-model.trainer(data, args.num_epochs, args.num_batches, alpha_bar_, args.lr, args.device, args.log_interval)
+model.trainer(data, args.num_epochs, args.num_batches, alpha_bar_, args.lr, args.device, args.log_interval, args.logfile)
 
 # Saving the model
 

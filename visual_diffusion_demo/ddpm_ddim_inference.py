@@ -102,7 +102,6 @@ args = parser.parse_args()
 hidden_dims = list(map(int, args.hidden_dims.split('-')))
 model = model_loader(args.model, hidden_dims, args.n_dim, args.timesteps)
 model.load_state_dict(torch.load(args.model_path, map_location = args.model_device))
-model.eval()
 
 # Initialising the beta scheduler
 
