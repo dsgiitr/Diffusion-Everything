@@ -74,6 +74,7 @@ class DiffusionConvNet(nn.Module):
                 print(f'Epoch : {_+1}, Loss : {net_epoch_loss}')
     
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
+        self.to(model_device)
         x_t = torch.randn(n,n_dim)
         timesteps_data = torch.zeros((T+1, *(x_t.shape)))
         timesteps_drift = torch.zeros((T, *(x_t.shape)))
