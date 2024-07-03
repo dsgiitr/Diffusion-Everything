@@ -48,8 +48,11 @@ class DiffusionConvNet(nn.Module):
         out = out.squeeze()
         return out
 
-    def trainer(self, data, num_epochs, num_batches, alpha_bar_, lr, device, log_interval):
+    def trainer(self, data, num_epochs, num_batches, alpha_bar_, lr, device, log_interval, logfile, progress_bar_callback = None):
+        f = open(logfile, 'w')
+        f.close()
         self.to(device)
+        self.train()
         optimizer = self.optimizer(self.parameters(), lr=lr)
         T = len(alpha_bar_)
         for _ in range(num_epochs):
@@ -71,10 +74,16 @@ class DiffusionConvNet(nn.Module):
                 optimizer.step()
                 net_epoch_loss += loss.item()*batch.shape[0]/data.shape[0]
             if log_interval > 0 and (_+1)%log_interval == 0:
+                f = open(logfile, 'a')
                 print(f'Epoch : {_+1}, Loss : {net_epoch_loss}')
+                f.write(f'Epoch : {_+1}, Loss : {net_epoch_loss}\n')
+                f.close()
+                if (progress_bar_callback is not None):
+                    progress_bar_callback((_+1)/num_epochs)
     
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
         self.to(model_device)
+        self.eval()
         x_t = torch.randn(n,n_dim)
         timesteps_data = torch.zeros((T+1, *(x_t.shape)))
         timesteps_drift = torch.zeros((T, *(x_t.shape)))
@@ -178,6 +187,7 @@ class DiffusionMLPNet(nn.Module):
                     progress_bar_callback((_+1)/num_epochs)
         
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
+        self.to(model_device)
         self.eval()
         x_t = torch.randn(n,n_dim)
         timesteps_data = torch.zeros((T+1, *(x_t.shape)))

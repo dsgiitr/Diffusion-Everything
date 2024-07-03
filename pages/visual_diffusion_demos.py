@@ -130,6 +130,7 @@ if (st.button("Initialise the Model")):
     if (args.diff_init == False):
         st.error("Please set the diffusion parameters first")
         st.stop()
+    args.num_epochs = num_epochs
     args.model_init = True
     args.model_training_started = False
     dataset = st.session_state.args.data
