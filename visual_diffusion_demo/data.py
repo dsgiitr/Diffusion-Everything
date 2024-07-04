@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 def swissroll(spirals = 2, n = 10000):
-    theta = np.linspace(0,2*spirals*np.pi,(int)(1e5))
+    theta = np.linspace(0,2*spirals*np.pi,n)
     r = 1 + theta
     x = r*np.cos(theta)
     y = r*np.sin(theta)
@@ -11,8 +11,8 @@ def swissroll(spirals = 2, n = 10000):
 
 def polygon(sides = 6, length = 5, n = 10000):
     t = np.linspace(0,sides,n)
-    s = length*np.cot(np.pi/sides)
-    k = s*np.tan(np.pi/sides)*s*(2*np.floor(t) - 1)
+    s = length/np.tan(np.pi/sides)
+    k = s*np.tan(np.pi/sides)*(2*(t-np.floor(t)) - 1)
     x = s*np.cos(((2*np.pi)/sides)*np.floor(t)) - k*np.sin(((2*np.pi)/sides)*np.floor(t))
     y = s*np.sin(((2*np.pi)/sides)*np.floor(t)) + k*np.cos(((2*np.pi)/sides)*np.floor(t))
     data = torch.tensor(np.array([x,y])).T
@@ -95,9 +95,12 @@ def data_loader(data, data_args, n, datafile = None):
     elif data == 'mobius':
         data = mobius(n = n)
 
-    elif data == 'custom':
+    elif data == 'datafile':
         data = torch.load(datafile)
     
+    elif data == 'custom':
+        data = torch.tensor(datafile).float()
+
     else:
         raise ValueError("Invalid data type")
     

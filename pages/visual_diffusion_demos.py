@@ -1,4 +1,7 @@
 import streamlit as st
+import numpy as np
+from streamlit_drawable_canvas import st_canvas
+import skimage as ski
 from visual_diffusion_demo.visualise import *
 from visual_diffusion_demo.model import model_loader
 from visual_diffusion_demo.data import data_loader
@@ -40,6 +43,13 @@ class Args:
         self.dim_max = None
         self.dim_steps = None
         self.inferset = False
+        self.device = torch.device("cpu")
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        #if torch.backends.mps.is_available():
+            #self.device = torch.device("mps")
+        self.epochs_trained = 0
+        self.custom_points = None
 
     def dataset_args(self, dataname = None, dataset = None, numpoints = None, dataargs = None, datafile = None):
         self.data_init = True
@@ -86,10 +96,36 @@ if 'args' not in st.session_state:
 st.header("Dataset Generation")
 data = st.selectbox("Choose the dataset to train the model on", ['swissroll', 'circle', 'polygon', 'donut', 'spring', 'mobius', 'custom'])
 numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
+if (data == 'custom'):
+    custom_points = None
+    stroke_width = st.slider('Stroke width', 1, 50, 10)
+    canvas_size = 501
+    dataset = st_canvas(update_streamlit = True, height = canvas_size, width = canvas_size, stroke_width = stroke_width)
+    if dataset is not None and dataset.image_data is not None:
+        img_data = dataset.image_data
+        im = img_data[:,:,3]
+        curpoints = np.count_nonzero(im)
+        if curpoints > 0:
+            resize_ratio = (numpoints+curpoints-1)//curpoints
+            im = ski.transform.resize(im, (resize_ratio*im.shape[0], resize_ratio*im.shape[1]), anti_aliasing = True)
+        custom_points = []
+        new_canvas_size = im.shape[0]
+        for i in range(new_canvas_size):
+            for j in range(new_canvas_size):
+                if im[i, j]> 0:
+                    custom_points.append([j-(new_canvas_size-1)/2,(new_canvas_size-1)/2-i])
+        custom_points = np.array(custom_points)
+        if (custom_points is not None and custom_points.size > 0 and np.max(np.abs(custom_points)) > 0):
+            custom_points = custom_points/np.max(np.abs(custom_points))*15
+        st.session_state.args.custom_points = custom_points
 
 if (st.button("Generate the Dataset")):
+    custom_points = st.session_state.args.custom_points
+    if (custom_points is None or custom_points.shape[0] == 1) and data == 'custom':
+        st.error("Please draw on the canvas first")
+        st.stop()
     args = st.session_state.args
-    dataset = data_loader(data = data, data_args = None, n = numpoints)
+    dataset = data_loader(data = data, data_args = None, n = numpoints, datafile = custom_points)
     fig = visualise_data(dataset, "Original Dataset", show = False)
     st.plotly_chart(fig, use_container_width = True)
     args.dataset_args(data, dataset, numpoints)
@@ -124,6 +160,7 @@ if (st.button("Initialise the Model")):
     if (args.diff_init == False):
         st.error("Please set the diffusion parameters first")
         st.stop()
+    args.num_epochs = num_epochs
     args.model_init = True
     args.model_training_started = False
     dataset = st.session_state.args.data
@@ -132,6 +169,7 @@ if (st.button("Initialise the Model")):
     if (model_type == 'Convolutional Neural Network'):
         model_type_ = 'conv_diffusion'
     model = model_loader(model_type_, list(map(int, hidden_dims.split('-'))), dataset.shape[1], args.timesteps)
+    args.epochs_trained = 0
     args.model_args(model_type_, hidden_dims, num_epochs, lr, batch_size, model)
     st.write("Model initialised successfully!")
 
@@ -141,14 +179,15 @@ if (st.button("Train the Model")):
         st.error("Please initialise the model first")
         st.stop()
     if (args.model_training_started == True):
-        st.error("Model training had already been started! This might lead to inaccurate results. To ensure accurate results, please reinitalize the model and then start training.")
+        st.warning(f"You have already trained the model for {args.epochs_trained} epochs, this will now train the model for {args.num_epochs} more epochs")
     args.inferset = False
     args.model_training_started = True
     progress_track = st.progress(0)
     model = args.model
     beta_scheduler_ = beta_scheduler(args.beta_min, args.beta_max, args.beta_scheduler)
     alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
-    model.trainer(args.data, args.num_epochs, (args.n+args.batch_size-1)//args.batch_size, alpha_bar_, args.lr, 'cpu', 1, 'log.txt', progress_bar_callback = lambda x: progress_track.progress(x, text = f"Training Progress : {round(x*100)}%"))
+    model.trainer(args.data, args.num_epochs, (args.n+args.batch_size-1)//args.batch_size, alpha_bar_, args.lr, args.device, 1, 'log.txt', progress_bar_callback = lambda x: progress_track.progress(x, text = f"Training Progress : {round(x*100)}%"))
+    args.epochs_trained += args.num_epochs
     #args.model_path = f"{args.model.model_type}_diffusion_model_{args.dataname}_{args.n}_{args.timesteps}_{args.beta_min}_{args.beta_max}_{args.beta_scheduler}_{args.modeltype}.pt" # can also possibly include 
 if (st.session_state.args.model_training_started == True):
     st.write("Model trained successfully!")
@@ -167,7 +206,7 @@ if (st.button("Set Inference Parameters")):
     beta_ = beta_scheduler_.beta_schedule(args.timesteps)
     alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
     model = args.model
-    dataset, timesteps_data, timesteps_drift = model.inferrer(args.n, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, "cpu")
+    dataset, timesteps_data, timesteps_drift = model.inferrer(numinferpoints, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, args.device)
     st.write("Inference parameters set successfully!")
     fig = visualise_data(dataset, "Inferred Dataset", show = False)
     st.plotly_chart(fig, use_container_width = True)

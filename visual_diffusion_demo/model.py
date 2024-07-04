@@ -48,8 +48,11 @@ class DiffusionConvNet(nn.Module):
         out = out.squeeze()
         return out
 
-    def trainer(self, data, num_epochs, num_batches, alpha_bar_, lr, device, log_interval):
+    def trainer(self, data, num_epochs, num_batches, alpha_bar_, lr, device, log_interval, logfile, progress_bar_callback = None):
+        f = open(logfile, 'w')
+        f.close()
         self.to(device)
+        self.train()
         optimizer = self.optimizer(self.parameters(), lr=lr)
         T = len(alpha_bar_)
         for _ in range(num_epochs):
@@ -71,12 +74,22 @@ class DiffusionConvNet(nn.Module):
                 optimizer.step()
                 net_epoch_loss += loss.item()*batch.shape[0]/data.shape[0]
             if log_interval > 0 and (_+1)%log_interval == 0:
+                f = open(logfile, 'a')
                 print(f'Epoch : {_+1}, Loss : {net_epoch_loss}')
+                f.write(f'Epoch : {_+1}, Loss : {net_epoch_loss}\n')
+                f.close()
+                if (progress_bar_callback is not None):
+                    progress_bar_callback((_+1)/num_epochs)
     
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
-        x_t = torch.randn(n,n_dim)
-        timesteps_data = torch.zeros((T+1, *(x_t.shape)))
-        timesteps_drift = torch.zeros((T, *(x_t.shape)))
+        self.to(model_device)
+        self.eval()
+        alpha_ = torch.tensor(alpha_).to(model_device)
+        alpha_bar_ = torch.tensor(alpha_bar_).to(model_device)
+        beta_ = torch.tensor(beta_).to(model_device)
+        x_t = torch.randn(n,n_dim).to(model_device)
+        timesteps_data = torch.zeros((T+1, *(x_t.shape))).to(model_device)
+        timesteps_drift = torch.zeros((T, *(x_t.shape))).to(model_device)
         dataset = torch.zeros(x_t.shape).to(model_device)
         for i in range(T,0,-1):
             timesteps_data[i] = x_t
@@ -87,7 +100,7 @@ class DiffusionConvNet(nn.Module):
                 alpha_bar_t = alpha_bar_[i-1]
                 alpha_bar_t_1 = alpha_bar_[i-2] if i > 1 else 1
                 sigma_t = np.sqrt((1-alpha_bar_t_1) * beta_t/(1-alpha_bar_t))
-                t_ = torch.tensor([i-1]*x_t.shape[0])
+                t_ = torch.tensor([i-1]*x_t.shape[0]).to(model_device).long()
                 epsilon_t = self(x_t, t_).squeeze()
                 mu_t = (x_t - ((1-alpha_t)/np.sqrt(1-alpha_bar_t))*epsilon_t)/np.sqrt(alpha_t)
                 drift_t = mu_t - x_t
@@ -95,6 +108,7 @@ class DiffusionConvNet(nn.Module):
                 x_t = mu_t + eta*sigma_t*z_t         
         timesteps_data[0] = x_t
         dataset = x_t
+        timesteps_drift = timesteps_drift.detach().numpy()
         timesteps_data = timesteps_data.detach().numpy()
         dataset = dataset.detach().numpy()
         return dataset, timesteps_data, timesteps_drift
@@ -177,10 +191,14 @@ class DiffusionMLPNet(nn.Module):
                     progress_bar_callback((_+1)/num_epochs)
         
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
+        self.to(model_device)
         self.eval()
-        x_t = torch.randn(n,n_dim)
-        timesteps_data = torch.zeros((T+1, *(x_t.shape)))
-        timesteps_drift = torch.zeros((T, *(x_t.shape)))
+        alpha_ = torch.tensor(alpha_).to(model_device)
+        alpha_bar_ = torch.tensor(alpha_bar_).to(model_device)
+        beta_ = torch.tensor(beta_).to(model_device)
+        x_t = torch.randn(n,n_dim).to(model_device)
+        timesteps_data = torch.zeros((T+1, *(x_t.shape))).to(model_device)
+        timesteps_drift = torch.zeros((T, *(x_t.shape))).to(model_device)
         dataset = torch.zeros(x_t.shape).to(model_device)
         for i in range(T,0,-1):
             timesteps_data[i] = x_t
@@ -191,7 +209,7 @@ class DiffusionMLPNet(nn.Module):
                 alpha_bar_t = alpha_bar_[i-1]
                 alpha_bar_t_1 = alpha_bar_[i-2] if i > 1 else 1
                 sigma_t = np.sqrt((1-alpha_bar_t_1) * beta_t/(1-alpha_bar_t))
-                t_ = torch.tensor([i-1]*x_t.shape[0])
+                t_ = torch.tensor([i-1]*x_t.shape[0]).to(model_device).long()
                 epsilon_t = self(x_t, t_).squeeze()
                 mu_t = (x_t - ((1-alpha_t)/np.sqrt(1-alpha_bar_t))*epsilon_t)/np.sqrt(alpha_t)
                 drift_t = mu_t - x_t
@@ -199,6 +217,7 @@ class DiffusionMLPNet(nn.Module):
                 x_t = mu_t + eta*sigma_t*z_t         
         timesteps_data[0] = x_t
         dataset = x_t
+        timesteps_drift = timesteps_drift.detach().numpy()
         timesteps_data = timesteps_data.detach().numpy()
         dataset = dataset.detach().numpy()
         return dataset, timesteps_data, timesteps_drift
