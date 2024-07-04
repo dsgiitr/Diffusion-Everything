@@ -1,4 +1,6 @@
 import streamlit as st
+import numpy as np
+from streamlit_drawable_canvas import st_canvas
 from visual_diffusion_demo.visualise import *
 from visual_diffusion_demo.model import model_loader
 from visual_diffusion_demo.data import data_loader
@@ -91,11 +93,30 @@ if 'args' not in st.session_state:
 
 st.header("Dataset Generation")
 data = st.selectbox("Choose the dataset to train the model on", ['swissroll', 'circle', 'polygon', 'donut', 'spring', 'mobius', 'custom'])
-numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
+if (data == 'custom'):
+    numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
+    stroke_width = st.slider('Stroke width', 1, 50, 10)
+    canvas_size = 501
+    dataset = st_canvas(update_streamlit = True, height = canvas_size, width = canvas_size, stroke_width = stroke_width)
+    if dataset is not None and dataset.image_data is not None:
+        img_data = dataset.image_data
+        im = img_data[:,:,3]
+        custom_points = []
+        for i in range(canvas_size):
+            for j in range(canvas_size):
+                if im[i, j]> 0:
+                    custom_points.append([j-(canvas_size-1)/2,(canvas_size-1)/2-i])
+        custom_points = np.array(custom_points)
+        st.write(custom_points.shape)
+else:
+    numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
+    custom_points = None
 
 if (st.button("Generate the Dataset")):
+    if custom_points is None:
+        st.error("Please draw on the canvas first")
     args = st.session_state.args
-    dataset = data_loader(data = data, data_args = None, n = numpoints)
+    dataset = data_loader(data = data, data_args = None, n = numpoints, datafile = custom_points)
     fig = visualise_data(dataset, "Original Dataset", show = False)
     st.plotly_chart(fig, use_container_width = True)
     args.dataset_args(data, dataset, numpoints)
@@ -139,6 +160,7 @@ if (st.button("Initialise the Model")):
     if (model_type == 'Convolutional Neural Network'):
         model_type_ = 'conv_diffusion'
     model = model_loader(model_type_, list(map(int, hidden_dims.split('-'))), dataset.shape[1], args.timesteps)
+    args.epochs_trained = 0
     args.model_args(model_type_, hidden_dims, num_epochs, lr, batch_size, model)
     st.write("Model initialised successfully!")
 
@@ -175,7 +197,7 @@ if (st.button("Set Inference Parameters")):
     beta_ = beta_scheduler_.beta_schedule(args.timesteps)
     alpha_bar_ = beta_scheduler_.alpha_bar_schedule(args.timesteps)
     model = args.model
-    dataset, timesteps_data, timesteps_drift = model.inferrer(args.n, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, args.device)
+    dataset, timesteps_data, timesteps_drift = model.inferrer(numinferpoints, args.n_dim, args.timesteps, eta, alpha_, alpha_bar_, beta_, 1, args.device)
     st.write("Inference parameters set successfully!")
     fig = visualise_data(dataset, "Inferred Dataset", show = False)
     st.plotly_chart(fig, use_container_width = True)

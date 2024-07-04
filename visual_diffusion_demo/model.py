@@ -100,7 +100,7 @@ class DiffusionConvNet(nn.Module):
                 alpha_bar_t = alpha_bar_[i-1]
                 alpha_bar_t_1 = alpha_bar_[i-2] if i > 1 else 1
                 sigma_t = np.sqrt((1-alpha_bar_t_1) * beta_t/(1-alpha_bar_t))
-                t_ = torch.tensor([i-1]*x_t.shape[0])
+                t_ = torch.tensor([i-1]*x_t.shape[0]).to(model_device).long()
                 epsilon_t = self(x_t, t_).squeeze()
                 mu_t = (x_t - ((1-alpha_t)/np.sqrt(1-alpha_bar_t))*epsilon_t)/np.sqrt(alpha_t)
                 drift_t = mu_t - x_t
@@ -209,7 +209,7 @@ class DiffusionMLPNet(nn.Module):
                 alpha_bar_t = alpha_bar_[i-1]
                 alpha_bar_t_1 = alpha_bar_[i-2] if i > 1 else 1
                 sigma_t = np.sqrt((1-alpha_bar_t_1) * beta_t/(1-alpha_bar_t))
-                t_ = torch.tensor([i-1]*x_t.shape[0])
+                t_ = torch.tensor([i-1]*x_t.shape[0]).to(model_device).long()
                 epsilon_t = self(x_t, t_).squeeze()
                 mu_t = (x_t - ((1-alpha_t)/np.sqrt(1-alpha_bar_t))*epsilon_t)/np.sqrt(alpha_t)
                 drift_t = mu_t - x_t
