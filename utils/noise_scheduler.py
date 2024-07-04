@@ -51,12 +51,12 @@ class Cosine(NoiseScheduler):
         else :
             self.device = device
         
-        t = torch.arange(timesteps)
+        t = torch.arange(1, timesteps+1)
         t_max = timesteps
         self.alpha_cumprod = (self.f(t, t_max) / self.f(torch.tensor(0), t_max)).to(self.device)
         self.alpha_cumprod_minus_one = torch.cat((torch.tensor([1], device = self.device), self.alpha_cumprod[:-1]), dim = -1)
         self.alpha = self.alpha_cumprod / self.alpha_cumprod_minus_one 
-        self.beta = 1 - self.alpha 
+        self.beta = (1 - self.alpha).clamp(0, 0.999)
         self.sigma = self.beta.sqrt() 
 
     @staticmethod
