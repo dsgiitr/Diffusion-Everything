@@ -84,9 +84,12 @@ class DiffusionConvNet(nn.Module):
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
         self.to(model_device)
         self.eval()
-        x_t = torch.randn(n,n_dim)
-        timesteps_data = torch.zeros((T+1, *(x_t.shape)))
-        timesteps_drift = torch.zeros((T, *(x_t.shape)))
+        alpha_ = torch.tensor(alpha_).to(model_device)
+        alpha_bar_ = torch.tensor(alpha_bar_).to(model_device)
+        beta_ = torch.tensor(beta_).to(model_device)
+        x_t = torch.randn(n,n_dim).to(model_device)
+        timesteps_data = torch.zeros((T+1, *(x_t.shape))).to(model_device)
+        timesteps_drift = torch.zeros((T, *(x_t.shape))).to(model_device)
         dataset = torch.zeros(x_t.shape).to(model_device)
         for i in range(T,0,-1):
             timesteps_data[i] = x_t
@@ -105,6 +108,7 @@ class DiffusionConvNet(nn.Module):
                 x_t = mu_t + eta*sigma_t*z_t         
         timesteps_data[0] = x_t
         dataset = x_t
+        timesteps_drift = timesteps_drift.detach().numpy()
         timesteps_data = timesteps_data.detach().numpy()
         dataset = dataset.detach().numpy()
         return dataset, timesteps_data, timesteps_drift
@@ -189,9 +193,12 @@ class DiffusionMLPNet(nn.Module):
     def inferrer(self, n, n_dim, T, eta, alpha_, alpha_bar_, beta_, repeated, model_device):
         self.to(model_device)
         self.eval()
-        x_t = torch.randn(n,n_dim)
-        timesteps_data = torch.zeros((T+1, *(x_t.shape)))
-        timesteps_drift = torch.zeros((T, *(x_t.shape)))
+        alpha_ = torch.tensor(alpha_).to(model_device)
+        alpha_bar_ = torch.tensor(alpha_bar_).to(model_device)
+        beta_ = torch.tensor(beta_).to(model_device)
+        x_t = torch.randn(n,n_dim).to(model_device)
+        timesteps_data = torch.zeros((T+1, *(x_t.shape))).to(model_device)
+        timesteps_drift = torch.zeros((T, *(x_t.shape))).to(model_device)
         dataset = torch.zeros(x_t.shape).to(model_device)
         for i in range(T,0,-1):
             timesteps_data[i] = x_t
@@ -210,6 +217,7 @@ class DiffusionMLPNet(nn.Module):
                 x_t = mu_t + eta*sigma_t*z_t         
         timesteps_data[0] = x_t
         dataset = x_t
+        timesteps_drift = timesteps_drift.detach().numpy()
         timesteps_data = timesteps_data.detach().numpy()
         dataset = dataset.detach().numpy()
         return dataset, timesteps_data, timesteps_drift
