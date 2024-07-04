@@ -113,7 +113,7 @@ else:
     custom_points = None
 
 if (st.button("Generate the Dataset")):
-    if custom_points is None:
+    if custom_points is None and data == 'custom':
         st.error("Please draw on the canvas first")
     args = st.session_state.args
     dataset = data_loader(data = data, data_args = None, n = numpoints, datafile = custom_points)
