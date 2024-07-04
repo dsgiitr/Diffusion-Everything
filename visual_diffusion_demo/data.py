@@ -99,7 +99,7 @@ def data_loader(data, data_args, n, datafile = None):
         data = torch.load(datafile)
     
     elif data == 'custom':
-        data = torch.tensor(datafile).float().repeat(n//datafile.shape[0],1)
+        data = torch.tensor(datafile).float()
 
     else:
         raise ValueError("Invalid data type")

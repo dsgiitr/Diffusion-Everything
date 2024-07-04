@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 from streamlit_drawable_canvas import st_canvas
+import skimage as ski
 from visual_diffusion_demo.visualise import *
 from visual_diffusion_demo.model import model_loader
 from visual_diffusion_demo.data import data_loader
@@ -48,6 +49,7 @@ class Args:
         #if torch.backends.mps.is_available():
             #self.device = torch.device("mps")
         self.epochs_trained = 0
+        self.custom_points = None
 
     def dataset_args(self, dataname = None, dataset = None, numpoints = None, dataargs = None, datafile = None):
         self.data_init = True
@@ -93,28 +95,35 @@ if 'args' not in st.session_state:
 
 st.header("Dataset Generation")
 data = st.selectbox("Choose the dataset to train the model on", ['swissroll', 'circle', 'polygon', 'donut', 'spring', 'mobius', 'custom'])
+numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
 if (data == 'custom'):
-    numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
+    custom_points = None
     stroke_width = st.slider('Stroke width', 1, 50, 10)
     canvas_size = 501
     dataset = st_canvas(update_streamlit = True, height = canvas_size, width = canvas_size, stroke_width = stroke_width)
     if dataset is not None and dataset.image_data is not None:
         img_data = dataset.image_data
         im = img_data[:,:,3]
+        curpoints = np.count_nonzero(im)
+        if curpoints > 0:
+            resize_ratio = (numpoints+curpoints-1)//curpoints
+            im = ski.transform.resize(im, (resize_ratio*im.shape[0], resize_ratio*im.shape[1]), anti_aliasing = True)
         custom_points = []
-        for i in range(canvas_size):
-            for j in range(canvas_size):
+        new_canvas_size = im.shape[0]
+        for i in range(new_canvas_size):
+            for j in range(new_canvas_size):
                 if im[i, j]> 0:
-                    custom_points.append([j-(canvas_size-1)/2,(canvas_size-1)/2-i])
+                    custom_points.append([j-(new_canvas_size-1)/2,(new_canvas_size-1)/2-i])
         custom_points = np.array(custom_points)
-        st.write(custom_points.shape)
-else:
-    numpoints = st.slider("Number of samples to generate for the dataset", 1000, 100000, 100000)
-    custom_points = None
+        if (custom_points is not None and custom_points.size > 0 and np.max(np.abs(custom_points)) > 0):
+            custom_points = custom_points/np.max(np.abs(custom_points))*15
+        st.session_state.args.custom_points = custom_points
 
 if (st.button("Generate the Dataset")):
-    if custom_points is None and data == 'custom':
+    custom_points = st.session_state.args.custom_points
+    if (custom_points is None or custom_points.shape[0] == 1) and data == 'custom':
         st.error("Please draw on the canvas first")
+        st.stop()
     args = st.session_state.args
     dataset = data_loader(data = data, data_args = None, n = numpoints, datafile = custom_points)
     fig = visualise_data(dataset, "Original Dataset", show = False)
