@@ -14,17 +14,11 @@ class Block(nn.Module):
         self.relu  = nn.ReLU()
         
     def forward(self, x, t, ):
-        # First Conv
         h = self.bnorm1(self.relu(self.conv1(x)))
-        # Time embedding
         time_emb = self.relu(self.time_mlp(t))
-        # Extend last 2 dimensions
         time_emb = time_emb[(..., ) + (None, ) * 2]
-        # Add time channel
         h = h + time_emb
-        # Second Conv
         h = self.bnorm2(self.relu(self.conv2(h)))
-        # Down or Upsample
         return self.transform(h)
 
 
@@ -40,18 +34,13 @@ class SinusoidalPositionEmbeddings(nn.Module):
         embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
-        # TODO: Double check the ordering here
         return embeddings
 
 
 class UNet_Encoder(nn.Module):
-    """
-    A simplified variant of the Unet architecture.
-    """
     def __init__(self):
         super().__init__()
         image_channels = 1
-        # down_channels = (64, 128, 256, 512, 1024) 
         down_channels = (32,64,128)
         time_emb_dim = 32
 

@@ -8,8 +8,9 @@ Simple implementation of Classifier Guidance on DDPM in one single python script
 ```
 usage: classifier_guidance_mnist.py [-h] [--timesteps TIMESTEPS] [--beta-start BETA_START] [--beta-end BETA_END] [--log-step LOG_STEP]
                [--checkpoint-step CHECKPOINT_STEP] [--unet-checkpoint UNET_CHECKPOINT] [--clf-checkpoint CLF_CHECKPOINT]
-               [--batch-size BATCH_SIZE] [--lr LR] [--num-epochs NUM_EPOCHS] [--num-images NUM_IMAGES] [--labels LABELS]
-               [--num-epochs-clf NUM_EPOCHS_CLF] [--lr-clf LR_CLF] [--guidance-scale GUIDANCE_SCALE] [--generate] 
+               [--batch-size BATCH_SIZE] [--lr LR] [--num-epochs NUM_EPOCHS] [--num-images NUM_IMAGES] 
+               [--labels LABELS] [--scheduler SCHEDULER] [--config CONFIG] [--num-epochs-clf NUM_EPOCHS_CLF]
+               [--lr-clf LR_CLF] [--guidance-scale GUIDANCE_SCALE] [--generate] 
                [--output-dir OUTPUT_DIR]
 
 options:
@@ -33,6 +34,10 @@ options:
                         Number of images to be generated
   --labels LABELS
                         Labels for images to be generated
+  --scheduler SCHEDULER
+                        Noise scheduler
+  --config CONFIG       
+                        Path of UNet config file in json format
   --num-epochs-clf NUM_EPOCHS_CLF
   --lr-clf LR_CLF
   --guidance-scale GUIDANCE_SCALE
@@ -58,6 +63,8 @@ wget https://huggingface.co/pranav-5644/classifier_guidance/resolve/main/unet_mn
   --unet-checkpoint "unet_mnist_500.ckpt" \
   --clf-checkpoint "clf_mnist_500.ckpt" \
   --labels 5,6,7,0,3,1,2,7,5,4 \
+  --scheduler "cosine" \
+  --config "config.json" \
   --guidance-scale 3 \
   --generate
 ```
