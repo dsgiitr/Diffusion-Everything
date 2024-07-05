@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from diffusers import UNet2DModel
 import torchvision.transforms as T
 from utils import noise_scheduler
-from att_unet import UNet_Encoder
+from Classifier import UNet_Encoder
 
 warnings.filterwarnings("ignore")
 
@@ -255,12 +255,12 @@ if __name__ == "__main__" :
     parser.add_argument("--beta-end", type = float, default = 1e-1)
     parser.add_argument("--log-step", type = int, default = 50)
     parser.add_argument("--checkpoint-step", type = int, default = 50)
-    parser.add_argument("--unet-checkpoint", default = "unet_clf_500.ckpt", type = str)
-    parser.add_argument("--clf-checkpoint", default = "clf_500.ckpt", type = str)
+    parser.add_argument("--unet-checkpoint", default = "unet_mnist_500.ckpt", type = str , help = "Checkpoint path for UNet")
+    parser.add_argument("--clf-checkpoint", default = "clf_mnist_500.ckpt", type = str, help="Checkpoint path for Classifier")
     parser.add_argument("--batch-size", type = int, default = 64)
     parser.add_argument("--lr", type = float, default = 1e-3)
     parser.add_argument("--num-epochs", type = int, default = 5)
-    parser.add_argument("--num-images", type = int, default = 25)
+    parser.add_argument("--num-images", type = int, default = 10)
     parser.add_argument("--labels", type=str_to_int_list, required=True, help="Comma-separated list of integers")
     parser.add_argument("--num-epochs-clf", type = int, default = 5)
     parser.add_argument("--lr-clf", type = float, default = 1e-3)
