@@ -2,27 +2,27 @@ import numpy as np
 import torch
 
 def swissroll(spirals = 2, n = 10000):
-    theta = np.linspace(0,2*spirals*np.pi,(int)(1e5))
+    theta = np.linspace(0,2*spirals*np.pi,n)
     r = 1 + theta
     x = r*np.cos(theta)
     y = r*np.sin(theta)
-    data = torch.tensor(np.array([x,y])).T
+    data = torch.from_numpy(np.array([x,y])).T.float()
     return data
 
 def polygon(sides = 6, length = 5, n = 10000):
     t = np.linspace(0,sides,n)
-    s = length*np.cot(np.pi/sides)
-    k = s*np.tan(np.pi/sides)*s*(2*np.floor(t) - 1)
+    s = length/np.tan(np.pi/sides)
+    k = s*np.tan(np.pi/sides)*(2*(t-np.floor(t)) - 1)
     x = s*np.cos(((2*np.pi)/sides)*np.floor(t)) - k*np.sin(((2*np.pi)/sides)*np.floor(t))
     y = s*np.sin(((2*np.pi)/sides)*np.floor(t)) + k*np.cos(((2*np.pi)/sides)*np.floor(t))
-    data = torch.tensor(np.array([x,y])).T
+    data = torch.from_numpy(np.array([x,y])).T.float()
     return data
 
 def circle(radius = 4, n = 10000):
     theta = np.linspace(0,2*np.pi,n)
     x = radius*np.cos(theta)
     y = radius*np.sin(theta)
-    data = torch.tensor(np.array([x,y])).T
+    data = torch.from_numpy(np.array([x,y])).T.float()
     return data
 
 def donut(a = 1, b = 4, n = 10000):
@@ -33,7 +33,7 @@ def donut(a = 1, b = 4, n = 10000):
     x = (a*np.cos(grid_coords[:,0]) + b)*np.cos(grid_coords[:,1])
     y = (a*np.cos(grid_coords[:,0]) + b)*np.sin(grid_coords[:,1])
     z = a*np.sin(grid_coords[:,0])
-    data = torch.tensor(np.array([x,y,z])).T
+    data = torch.from_numpy(np.array([x,y,z])).T.float()
     return data
 
 def spring(length = 10, radius = 4, n = 10000):
@@ -41,7 +41,7 @@ def spring(length = 10, radius = 4, n = 10000):
     x = radius*np.cos(theta)
     y = radius*np.sin(theta)
     z = theta/np.pi
-    data = torch.tensor(np.array([x,y,z])).T
+    data = torch.from_numpy(np.array([x,y,z])).T.float()
     return data
 
 def mobius(n = 10000):
@@ -53,7 +53,7 @@ def mobius(n = 10000):
     x = np.cos(theta)+s*np.sin(theta/2)*np.cos(theta)
     y = np.sin(theta)+s*np.sin(theta/2)*np.sin(theta)
     z = s*np.cos(theta/2)
-    data = torch.tensor(np.array([x,y,z])).T
+    data = torch.from_numpy(np.array([x,y,z])).T.float()
     return data
 
 def data_loader(data, data_args, n, datafile = None):
@@ -95,9 +95,12 @@ def data_loader(data, data_args, n, datafile = None):
     elif data == 'mobius':
         data = mobius(n = n)
 
-    elif data == 'custom':
+    elif data == 'datafile':
         data = torch.load(datafile)
     
+    elif data == 'custom':
+        data = torch.from_numpy(datafile).float()
+
     else:
         raise ValueError("Invalid data type")
     
