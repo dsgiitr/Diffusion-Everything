@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from utils import noise_scheduler
 from diffusers import UNet2DModel
 import torchvision.transforms as T
-from classifier import UNet_Encoder
+from .classifier import UNet_Encoder
 
 warnings.filterwarnings("ignore")
 
@@ -42,14 +42,13 @@ class DDPM():
         self.load_checkpoint_unet(unet_checkpoint)
         self.load_checkpoint_classifier(clf_checkpoint)
         self.img_shape = [UNetConfig["in_channels"], UNetConfig["sample_size"], UNetConfig["sample_size"]]
-
         #DDPM Schedulers
         if scheduler == "linear" : 
             self.noise_scheduler = noise_scheduler.Linear(betaStart, betaEnd, timesteps, self.device)
         elif scheduler == "cosine" :    
             self.noise_scheduler = noise_scheduler.Cosine(timesteps, self.device)
 
-        self. preprocess = T.Compose([
+        self.preprocess = T.Compose([
             T.ToTensor(),
             T.Normalize([0.5] * UNetConfig["in_channels"], [0.5] * UNetConfig["in_channels"])
         ])
@@ -110,7 +109,8 @@ class DDPM():
         logStep, 
         checkpointStep, 
         lr, 
-        ema = True, ):
+        ema = True,
+    ):
         
         self.UNet.train()
         if ema :
@@ -140,7 +140,7 @@ class DDPM():
                 if (i+1) & checkpointStep == 0 :
                     self.save_checkpoint()
 
-    def generate(self, guidanceScale, labels, streamlit_callback = None): #Reverse process
+    def generate(self, numImages, labels ,guidanceScale, streamlit_callback = None): #Reverse process
         device = self.device
         ns = self.noise_scheduler
         self.UNet.eval()
@@ -149,12 +149,11 @@ class DDPM():
         self.clf.requires_grad_(False)
 
         x_Ts = []
-        x_T = torch.randn(1, 3, 32, 32, device = device)
+        x_T = torch.randn(numImages, *self.img_shape, device = self.device)
         x_Ts.append(self.tensor2numpy(x_T.cpu()))
         for t in tqdm(torch.arange(self.timesteps - 1, 0, -1, device = device)):
-            z = torch.randn(1, 3, 32, 32, device = device) 
+            z = torch.randn(numImages, *self.img_shape, device) 
             epsilon_theta = self.UNet(x_T, t).sample 
-
             x_T.requires_grad_(True)
             prob_dist = self.clf(x_T, torch.LongTensor([t]).to(device))
             loss = F.cross_entropy(prob_dist, torch.LongTensor(labels).to(device))
@@ -170,50 +169,38 @@ class DDPM():
             
         return x_Ts
 
-    def fast_generate(self, numImages, guidanceScale, labels, steps, lerp = 1,streamlit_callback = None): 
+    def fast_generate(self, numImages, labels ,guidanceScale, steps, lerp = 1,streamlit_callback = None): 
+        device = self.device
+        ns = self.noise_scheduler
         self.UNet.eval()
         self.clf.eval()
         self.clf.requires_grad_(False)
         self.UNet.requires_grad_(False)
-        ns = self.noise_scheduler
+
         alpha_cumprod = ns.alpha_cumprod[torch.linspace(0, self.timesteps - 1, steps, device = self.device).long()]
         alpha_cumprod_minus_one = torch.cat((torch.tensor([1], device = self.device), alpha_cumprod[:-1]), dim = -1)
-        beta = (1 - alpha_cumprod / alpha_cumprod_minus_one).clamp(0, 0.999)
+        beta = 1 - alpha_cumprod / alpha_cumprod_minus_one
         alpha = 1 - beta
         beta_tilda = ((1 - alpha_cumprod_minus_one) / (1 - alpha_cumprod)) * beta 
         beta_final = beta * (1 - lerp) + beta_tilda * lerp
         sigma = beta_final.sqrt()
         idx = torch.linspace(0, self.timesteps - 1, steps, device = self.device).long()
+
         x_Ts = []
         x_T = torch.randn(numImages, *self.img_shape, device = self.device) 
         x_Ts.append(self.tensor2numpy(x_T.cpu()))
-        y = torch.LongTensor(labels).to(self.device)
-        
-        for t in tqdm(torch.arange(self.timesteps - 1, 0, -1, device = self.device)):
+        for t in tqdm(torch.arange(steps - 1, 0, -1, device = self.device)):
             z = torch.randn(numImages, *self.img_shape, device = self.device) 
-            epsilon_theta = self.UNet(x_T, idx[t], y).sample 
-            t = t.unsqueeze(0)
+            epsilon_theta = self.UNet(x_T, idx[t]).sample 
             x_T.requires_grad_(True)
-            x_T_opt = torch.optim.Adam([x_T], lr=args.lr_clf)  
-            acc =  0
-            num_steps = 50
-            for i in range(num_steps):
-                logits = self.clf(self.renorm(x_T), t)
-                out = logits.argmax(-1)
-                acc += accuracy(out, y)
-                loss = F.cross_entropy(logits, y)
-                x_T_opt.zero_grad()
-                loss.backward()
-                x_T_opt.step()
-            tqdm.write(f"Step : {i+1} | Loss : {round(loss.item(), 4)}")
-            tqdm.write(f"Accuracy : {round(acc/num_steps, 3)}")
-            print("predicted labels :",out)
-            grads = x_T.grad.data
+            prob_dist = self.clf(x_T, torch.LongTensor([t]).to(device))
+            loss = F.cross_entropy(prob_dist, torch.LongTensor(labels).to(device))
+            loss.backward()
+            grads = x_T.grad
             x_T.requires_grad_(False)
-            t = t.squeeze()
-            mean = (1 / alpha[t].sqrt()) * (x_T - ((1 - alpha[t])/(1 - alpha_cumprod[t]).sqrt()) * epsilon_theta)
             old_x_T = x_T 
-            x_T = mean - guidanceScale * grads  +  z * sigma[t] 
+            mean = (1 / alpha[t].sqrt()) * (x_T - ((1 - alpha[t])/(1 - alpha_cumprod[t]).sqrt()) * epsilon_theta)
+            x_T = mean  +  z * sigma[t] - grads * guidanceScale
             if streamlit_callback :
                 streamlit_callback(epsilon_theta, mean, old_x_T, self.tensor2numpy(x_T.cpu()), t)
             x_Ts.append(self.tensor2numpy(x_T.cpu()))
