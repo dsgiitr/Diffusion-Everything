@@ -1,0 +1,1 @@
+Here you'll train a complete latent diffusion pipeline on MNIST dataset and sample conditionally from the latent space to generate images.

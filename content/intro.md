@@ -1,0 +1,1 @@
+This project aims to help people understand Diffusion Models in depth from the first principles. There are three demos tartgetting different aspects of understanding diffusion. 

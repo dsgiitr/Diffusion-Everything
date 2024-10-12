@@ -1,0 +1,43 @@
+.block-container{
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    margin-top: 1rem;
+}
+.border {
+    border: 5px solid #111b30; 
+    border-radius: 20px;
+    padding: 20px; 
+    height: 250px; 
+    width: 400px;
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+    flex-direction: column; 
+    text-align: center; 
+    text-decoration: none; 
+    color: #FFFFFF; 
+    margin: 10px;
+    transition: transform 0.3s, box-shadow 0.3s; 
+}
+
+.border:hover {
+    transform: translateY(-3px); 
+    box-shadow: 0 2px 20px rgba(60, 60, 60, 0.2); 
+    background-color: #141924;
+}
+a:link {  
+    text-decoration: none;
+    color: #FFFFFF;
+} 
+a:visited { 
+    text-decoration: none; 
+    color: #FFFFFF;
+} 
+a:hover { 
+    text-decoration: none; 
+    color: #FFFFFF;
+} 
+a:active { 
+    text-decoration: none;
+    color: #FFFFFF;
+}

@@ -1,0 +1,1 @@
+To better understand the diffusion process you can create your own two-dimentional dataset and train a simple diffusion model on it to get the intuition of generating samples from the data distribution. 
