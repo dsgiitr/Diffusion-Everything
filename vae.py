@@ -200,7 +200,7 @@ class Diffusion():
         means = [] 
         labels = []
 
-        dataset = torchvision.datasets.MNIST(root = dataset, download = True, transform = vae.preprocess)
+        dataset = torchvision.datasets.MNIST(root = dataset_path, download = True, transform = vae.preprocess)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size = 2048, drop_last = True, num_workers = 3)
         for (x, y) in tqdm(dataloader, total = len(dataloader)) :
             x = x.to(device)

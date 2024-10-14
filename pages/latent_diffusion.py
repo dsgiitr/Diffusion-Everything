@@ -1,3 +1,4 @@
+import os
 import time
 import json 
 import torch
@@ -12,7 +13,7 @@ import streamlit as st
 from functools import partial
 
 
-device = "cpu"
+device = os.environ["DEVICE"]
 
 st.set_page_config(
     layout="wide", 
