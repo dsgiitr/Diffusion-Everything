@@ -1,8 +1,8 @@
-# Diffusion Everything  
+![](content/banner.png)
 Diffusion models as of now are the go-to models in the field of Generative AI be it images or video. This project aims to help understand the process with three interactive demos. 
-1. Diffusion on CIFAR-10 : We trained multiple variants of diffusion models along with option to choose from different reverse samplers from DDPM sampler to latest DPM2++ sampler. You will find code snippets as well as simple description of all the reverse samples. 
-2. Latent Diffusion with MNIST : In this part we first train a simple VAE on MNIST dataset to maps the dataset to a 2D distribution. Then we conditionally sample points from the 2D dataset using a diffusion model. 
-3. Diffusion on 2D and 3D datasets : To gain an intuitive understanding of sampling process we can train diffusion models on 2D shapes and custom drawings, then sample thousands of points using diffusion model to recreate the complete dataset. 
+1. Diffusion on CIFAR-10 : We trained multiple variants of diffusion models along with the option to choose from different reverse samplers from DDPM sampler to the latest DPM2++ sampler. You will find code snippets as well as a simple description of all the reverse samples. 
+2. Latent Diffusion with MNIST : In this part, we first train a simple VAE on MNIST dataset to map the dataset to a 2D distribution. Then we conditionally sample points from the 2D dataset using a diffusion model. 
+3. Diffusion on 2D and 3D datasets : To gain an intuitive understanding of the sampling process we can train diffusion models on 2D shapes and custom drawings, then sample thousands of points using diffusion model to recreate the complete dataset. 
 
 ## Setup and Run
 ```bash 
@@ -84,6 +84,43 @@ images = model.generate(
 
 ## Contribution Guide 
 Furthur contribution can be made by adding new reverse samplers and pre-trained models in the following format. 
+Directory structure 
+```
+.
+├── content
+│   ├── banner.png
+│   ├── diffusion_2d.md
+│   ├── favicon.png
+│   ├── forward_diffusion.md
+│   ├── intro.md
+│   ├── latent_diffusion_intro.md
+│   ├── latent_diffusion.md
+│   ├── reverse_samplers_intro.md
+│   ├── samplers
+│   │   └── DDPM Class Conditioned
+│   │       ├── code.md
+│   │       └── info.md
+│   └── vae.md
+├── diffusion_everything.py
+├── diffusion.py
+├── models.json
+├── noise_scheduler.py
+├── pages
+│   └── latent_diffusion.py
+├── README.md
+├── reverse_samplers
+│   ├── __init__.py
+│   └── sampler.py
+|   └── ddpm.py
+├── style.css
+├── utils.py
+└── vae.py
+```
+1. Edit `models.json` and add config and hyperparameters of your model
+2. Add the download link in `download.sh`
+2. Add the class of your sampler by inheriting the `ReverseSampler` parent class
+3. Create `NameOfSampler` directory in "content/samplers" with two files named `intro.md` and `code.md`. Add its breif description in `intro.md` and sample code in `code.md` 
+
 
 
 
