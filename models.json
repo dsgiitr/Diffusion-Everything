@@ -2,7 +2,7 @@
     "linear" : {
         "DDPM Class Conditioned" :
             {
-                "path" : "/scratch/shorya_s.iitr/checkpoints/checkpoints/ddpm_linear/ddpm-linear.final", 
+                "path" : "./checkpoints/ddpm-linear.pth", 
                 "timesteps" : 1000,  
                 "beta_start" : 1e-4,
                 "beta_end" : 2e-2, 

@@ -1,0 +1,17 @@
+altair
+diffusers
+matplotlib
+numpy
+huggingface_hub
+hf_transfer
+pandas
+Pillow
+plotly
+scipy
+skimage
+streamlit
+streamlit_drawable_canvas
+torch
+torchvision
+tqdm
+
