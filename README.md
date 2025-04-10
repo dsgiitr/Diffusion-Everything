@@ -1,4 +1,4 @@
-![](banner.png)  
+![](content/banner.png)  
 # Diffusion Everything  
 Diffusion models are currently the go-to models in the field of Generative AI, be it images or video. This project aims to help users understand the process with three interactive demos. 
 1. Diffusion on CIFAR-10: We trained multiple variants of diffusion models and the option to choose from different reverse samplers from the DDPM sampler to the latest DPM2++ sampler. You will find code snippets as well as a simple description of all the reverse samples. 
