@@ -87,6 +87,8 @@ Furthur contribution can be made by adding new reverse samplers and pre-trained 
 Directory structure 
 ```
 .
+├── checkpoints
+├── config.toml
 ├── content
 │   ├── banner.png
 │   ├── diffusion_2d.md
@@ -103,18 +105,28 @@ Directory structure
 │   └── vae.md
 ├── diffusion_everything.py
 ├── diffusion.py
+├── download.sh
 ├── models.json
 ├── noise_scheduler.py
 ├── pages
-│   └── latent_diffusion.py
+│   ├── latent_diffusion.py
+│   └── visual_diffusion_demos.py
 ├── README.md
+├── requirements.txt
 ├── reverse_samplers
+│   ├── ddpm.py
 │   ├── __init__.py
 │   └── sampler.py
-|   └── ddpm.py
 ├── style.css
 ├── utils.py
-└── vae.py
+├── vae.py
+└── visual_diffusion_demo
+    ├── beta_scheduler.py
+    ├── data.py
+    ├── ddpm_ddim_inference.py
+    ├── ddpm_ddim_training.py
+    ├── model.py
+    └── visualise.py
 ```
 1. Edit `models.json` and add config and hyperparameters of your model
 2. Add the download link in `download.sh`
