@@ -27,6 +27,8 @@ st.set_page_config(
     page_icon = "content/favicon.png", 
 )
 st.page_link("pages/latent_diffusion.py")
+st.page_link("pages/visual_diffusion_demos.py")
+
 
 
 
@@ -59,7 +61,7 @@ link2.markdown(f'''
         </p>
     </a>''', unsafe_allow_html=True)
 link3.markdown(f'''
-    <a class="border" href="https://www.example.com/page2">
+    <a class="border" href="/visual_diffusion_demos">
         <h5>2D and 3D Diffusion</h5> 
         <p>
             {open("content/diffusion_2d.md").read()}
