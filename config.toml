@@ -1,0 +1,17 @@
+[server]
+runOnSave = true
+
+[theme]
+
+font="monospace"
+primaryColor="#0E76A8"  
+backgroundColor="#0E1117"  
+secondaryBackgroundColor="#262730" 
+textColor="#FFFFFF" 
+
+#[theme]
+#primaryColor="#66FCF1"  # Optional: You can adjust this to any highlight color
+#backgroundColor="#000000"  # Almost black background
+#secondaryBackgroundColor="#102813"  # Dark grey sidebar or secondary background
+#textColor="#C5C6C7"
+#font="monospace"
