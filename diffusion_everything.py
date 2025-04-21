@@ -18,6 +18,7 @@ import torchvision.transforms as T
 from skimage.restoration import estimate_sigma 
 
 dataset_path = os.environ["DATASET"]
+device = os.environ["DEVICE"] if "DEVICE" in os.environ else ("cuda" if torch.cuda.is_available() else "cpu")
 
 sys.path.append("./reverse_samplers/")
 st.set_page_config(
@@ -90,14 +91,14 @@ def get_model(sampler, scheduler):
             UNetConfig = unet_config,
             scheduler = scheduler.lower(), 
             checkpoint = checkpoint, 
-            device = "cuda:0", 
+            device = device, 
         )
 
     # Add cosine
     return model 
 
 
-dataset = torchvision.datasets.CIFAR10(root = dataset_path)
+dataset = torchvision.datasets.CIFAR10(root = dataset_path, download = True)
 labels = torch.LongTensor(dataset.targets)
 idx = torch.arange(len(labels))
 

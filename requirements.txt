@@ -8,7 +8,7 @@ pandas
 Pillow
 plotly
 scipy
-skimage
+scikit-image
 streamlit
 streamlit_drawable_canvas
 torch
